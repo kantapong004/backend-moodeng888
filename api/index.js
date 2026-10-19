@@ -28,6 +28,71 @@ app.get('/members/:id', (req, res) => {
   res.json(member);
 });
 
+// ข้อมูลตั้งต้นของ resource หลัก (เก็บในหน่วยความจำ)
+let foods = [
+    { id: 1, name: 'แกงเขียวหวาน', location: 'ร้าน 4', status: 'pending' },
+    { id: 2, name: 'ผัดกะเพรา', location: 'ร้าน 2', status: 'done' },
+  ];
+let nextId = 3;
+
+// R: ดูทั้งหมด (รองรับ ?status=pending)
+app.get('/foods', (req, res) => {
+    const { status } = req.query;
+    if (status) {
+      return res.json(foods.filter((s) => s.status === status));
+    }
+    res.json(foods);
+  });
+  // R: ดู 1 รายการ
+app.get('/foods/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const foods = foods.find((r) => r.id === id);
+    if (!foods) {
+      return res.status(404).json({ message: 'ไม่พบรายการอาหาร' });
+    }
+    res.json(foods);
+  });
+  // C: เพิ่ม
+app.post('/foods', (req, res) => {
+    const { name, location, status } = req.body;
+    if (!name || !location) {
+      return res.status(400).json({ message: 'ต้องส่ง name และ location' });
+    }
+    const foods = { id: nextId++, name, location, status: 'pending' };
+    foods.push(foods);
+    res.status(201).json(foods);
+  });
+  // U: แก้ไข
+app.put('/foods/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const foods = foods.find((r) => r.id === id);
+    if (!foods) {
+      return res.status(404).json({ message: 'ไม่พบรายการอาหาร' });
+    }
+    const allowed = ['pending', 'doing', 'done'];
+    if (req.body.status && !allowed.includes(req.body.status)) {
+      return res.status(400).json({ message: 'status ต้องเป็น pending, doing หรือ done' });
+    }
+    foods.title = req.body.title ?? foods.title;
+    foods.location = req.body.location ?? foods.location;
+    foods.status = req.body.status ?? foods.status;
+    res.json(foods);
+  });
+  // D: ลบ
+app.delete('/foods/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const index = foods.findIndex((r) => r.id === id);
+    if (index === -1) {
+      return res.status(404).json({ message: 'ไม่พบรายการแจ้งซ่อม' });
+    }
+    foods.splice(index, 1);
+    res.status(204).send();
+  });
+   
+  // ไม่ตรงกับ route ใดเลย
+  app.use((req, res) => {
+    res.status(404).json({ message: `ไม่มี ${req.method} ${req.path} ในระบบ` });
+  });
 app.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
 });
